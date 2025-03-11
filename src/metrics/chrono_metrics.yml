@@ -1,0 +1,628 @@
+
+_src_mariadb: &src_mariadb
+  type: mariadb
+  credentials_key: mariadb_stage
+  read_conf:
+    options:
+      fetch_size: 1000
+
+dq_chrono_2g:
+  source:
+    <<: *src_mariadb
+    database: ods_staging
+    table: chrono_landing_2g
+  target:
+    <<: *src_mariadb
+    database: ods
+    table: chrono_2g
+  measure:
+    timeliness:
+      date_column: date_id
+      date_format: "%Y-%m-%d"
+      expected_delivery: "days:-1"
+      check_avaibility_until: "days:-8"
+      interval_unit: days
+    completeness:
+      # date_column: date_id ## commented to check all rows
+      # date_format: "%Y-%m-%d"
+      date_checked: "days:-1"
+      dq_rules:
+        source: "source IS NOT NULL"
+        regional: "regional LIKE 'REGIONAL%'"
+        vendor: "vendor IN ('HUAWEI', 'NSN', 'ERICSSON', 'ZTE')"
+        bscid_lac_ci: "bscid_lac_ci IS NOT NULL"
+        bsc_name: "bsc_name IS NOT NULL"
+        bts_name: "bts_name IS NOT NULL"
+        site_id: "site_id IS NOT NULL"
+        # site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-Z]{3})([0-9]{3})')"
+        ne_id: "ne_id IS NOT NULL"
+        lac: "lac RLIKE '([0-9]{1,7})'"
+        ci: "ci RLIKE '([0-9]{1,5})'"
+        frequency_mhz: "frequency_mhz BETWEEN 900 AND 1900"
+        bandtype: "bandtype IN ('E-GSM-900', 'DCS-1800')"
+        type_bts: "type_bts IS NOT NULL"
+        type_frequency: "type_frequency IN ('DCS', 'GSM')"
+        new_site: "new_site IN ('EXISTING', 'NEW SITE')"
+        cell_name: "cell_name IS NOT NULL"
+        cgi: "cgi RLIKE '^510-10-([0-9]+)-([0-9]+)$'"
+        longitude: "longitude BETWEEN 94 AND 142"
+        latitude: "latitude BETWEEN -12 AND 7"
+    accuracy:
+      source_filter:
+        date_column: date_id ## commented to check all rows
+        date_format: "%Y-%m-%d"
+        date_checked: "days:-1"
+        additional_filter:
+        groupby: lac,ci
+      target_filter:
+        date_column: date_id ## commented to check all rows
+        date_format: "%Y-%m-%d"
+        date_checked: "days:-1"
+        groupby: lac,ci
+      join_type: inner
+      dq_rules:
+        # sum_of_trx:
+        #   source_cols: trx
+        #   target_cols: trx
+        #   aggfunc: sum
+        max_of_longitude:
+          source_cols: longitude
+          target_cols: longitude
+          aggfunc: max
+          threshold: 0.02
+        max_of_latitude:
+          source_cols: latitude
+          target_cols: latitude
+          aggfunc: max
+          threshold: 0.02
+        sum_of_frequency_mhz:
+          source_cols: frequency_mhz
+          target_cols: frequency_mhz
+          aggfunc: sum
+
+dq_chrono_landing_2g:
+  target:
+    <<: *src_mariadb
+    database: ods_staging
+    table: chrono_landing_2g
+  measure:
+    timeliness:
+      date_column: date_id
+      date_format: "%Y-%m-%d"
+      expected_delivery: "days:-1"
+    completeness:
+      # date_column: date_id ## commented to check all rows
+      # date_format: "%Y-%m-%d"
+      date_checked: "days:-1"
+      dq_rules:
+        source: "source IS NOT NULL"
+        regional: "regional LIKE 'REGIONAL%'"
+        vendor: "vendor IN ('HUAWEI', 'NSN', 'ERICSSON', 'ZTE')"
+        bscid_lac_ci: "bscid_lac_ci IS NOT NULL"
+        bsc_name: "bsc_name IS NOT NULL"
+        bts_name: "bts_name IS NOT NULL"
+        site_id: "site_id IS NOT NULL"
+        # site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-Z]{3})([0-9]{3})')"
+        ne_id: "ne_id IS NOT NULL"
+        lac: "lac RLIKE '([0-9]{1,7})'"
+        ci: "ci RLIKE '([0-9]{1,5})'"
+        frequency_mhz: "frequency_mhz BETWEEN 900 AND 1900"
+        bandtype: "bandtype IN ('E-GSM-900', 'DCS-1800')"
+        type_bts: "type_bts IS NOT NULL"
+        type_frequency: "type_frequency IN ('DCS', 'GSM')"
+        new_site: "new_site IN ('EXISTING', 'NEW SITE')"
+        cell_name: "cell_name IS NOT NULL"
+        cgi: "cgi RLIKE '^510-10-([0-9]+)-([0-9]+)$'"
+        longitude: "longitude BETWEEN 94 AND 142"
+        latitude: "latitude BETWEEN -12 AND 7"
+
+
+# dq_chrono_2g_uso:
+#   source:
+#     <<: *src_mariadb
+#     database: ods_staging
+#     table: chrono_landing_2g_uso
+#   target:
+#     <<: *src_mariadb
+#     database: ods
+#     table: chrono_2g_uso
+#   measure:
+#     timeliness:
+#       date_column: date_id
+#       date_format: "%Y-%m-%d"
+#       expected_delivery: "days:-1"
+#     completeness:
+#       # date_column: date_id ## commented to check all rows
+#       # date_format: "%Y-%m-%d"
+#       date_checked: "days:-1"
+#       dq_rules:
+#         source: "source IS NOT NULL"
+#         regional: "regional LIKE 'REGIONAL%'"
+#         vendor: "vendor IN ('HUAWEI', 'NSN', 'ERICSSON', 'ZTE')"
+#         bscid_lac_ci: "bscid_lac_ci IS NOT NULL"
+#         bsc_name: "bsc_name IS NOT NULL"
+#         bts_name: "bts_name IS NOT NULL"
+#         site_id: "site_id IS NOT NULL"
+#         # site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-
+#         ne_id: "ne_id IS NOT NULL"
+#         lac: "lac RLIKE '([0-9]{1,7})'"
+#         ci: "ci RLIKE '([0-9]{1,5})'"
+#         frequency_mhz: "frequency_mhz BETWEEN 900 AND 1900"
+#         bandtype: "bandtype IN ('E-GSM-900', 'DCS-1800')"
+#         type_bts: "type_bts IS NOT NULL"
+#         type_frequency: "type_frequency IN ('DCS', 'GSM')"
+#         new_site: "new_site IN ('EXISTING', 'NEW SITE')"
+#         cell_name: "cell_name IS NOT NULL"
+#         cgi: "cgi RLIKE '^510-10-([0-9]+)-([0-9]+)$'"
+#         longitude: "longitude BETWEEN 94 AND 142"
+#         latitude: "latitude BETWEEN -12 AND 7"
+
+# dq_chrono_landing_2g_uso:
+#   target:
+#     <<: *src_mariadb
+#     database: ods_staging
+#     table: chrono_landing_2g_uso
+#   measure:
+#     timeliness:
+#       date_column: date_id
+#       date_format: "%Y-%m-%d"
+#       expected_delivery: "days:-1"
+#     completeness:
+#       # date_column: date_id ## commented to check all rows
+#       # date_format: "%Y-%m-%d"
+#       date_checked: "days:-1"
+#       dq_rules:
+#         source: "source IS NOT NULL"
+#         regional: "regional LIKE 'REGIONAL%'"
+#         vendor: "vendor IN ('HUAWEI', 'NSN', 'ERICSSON', 'ZTE')"
+#         bscid_lac_ci: "bscid_lac_ci IS NOT NULL"
+#         bsc_name: "bsc_name IS NOT NULL"
+#         bts_name: "bts_name IS NOT NULL"
+#         site_id: "site_id IS NOT NULL"
+#         # site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-
+#         ne_id: "ne_id IS NOT NULL"
+#         lac: "lac RLIKE '([0-9]{1,7})'"
+#         ci: "ci RLIKE '([0-9]{1,5})'"
+#         frequency_mhz: "frequency_mhz BETWEEN 900 AND 1900"
+#         bandtype: "bandtype IN ('E-GSM-900', 'DCS-1800')"
+#         type_bts: "type_bts IS NOT NULL"
+#         type_frequency: "type_frequency IN ('DCS', 'GSM')"
+#         new_site: "new_site IN ('EXISTING', 'NEW SITE')"
+#         cell_name: "cell_name IS NOT NULL"
+#         cgi: "cgi RLIKE '^510-10-([0-9]+)-([0-9]+)$'"
+#         longitude: "longitude BETWEEN 94 AND 142"
+#         latitude: "latitude BETWEEN -12 AND 7"
+
+# dq_chrono_3g:
+#   source:
+#     <<: *src_mariadb
+#     database: ods_staging
+#     table: chrono_landing_3g
+#   target:
+#     <<: *src_mariadb
+#     database: ods
+#     table: chrono_3g
+#   measure:
+#     timeliness:
+#       date_column: date_id
+#       date_format: "%Y-%m-%d"
+#       expected_delivery: "days:-1"
+#       check_avaibility_until: "days:-8"
+#       interval_unit: days
+#     completeness:
+#       # date_column: date_id ## commented to check all rows
+#       # date_format: "%Y-%m-%d"
+#       date_checked: "days:-1"
+#       dq_rules:
+#         source: "source IS NOT NULL"
+#         regional: "regional LIKE 'REGIONAL%'"
+#         vendor: "vendor IN ('HUAWEI', 'NSN', 'ERICSSON', 'ZTE')"
+#         rnc_id_lac_ci: "rnc_id_lac_ci IS NOT NULL"
+#         rnc_name: "rnc_name IS NOT NULL"
+#         nodeb_name: "nodeb_name IS NOT NULL"
+#         cell_name: "cell_name IS NOT NULL"
+#         ne_id: "ne_id IS NOT NULL"
+#         # site_id: "site_id IS NOT NULL"
+#         site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-Z]{3})([0-9]{3})')"
+#         lac: "lac RLIKE '([0-9]{1,7})'"
+#         ci: "ci RLIKE '([0-9]{1,5})'"
+#         frequency_mhz: "frequency_mhz BETWEEN 800 AND 2200"
+#         bandtype: "bandtype IN ('UMTS-2100' , 'UMTS-900', 'UMTS-850', 'UMTS-800')"
+#         type_bts: "type_bts IS NOT NULL"
+#         f1_f2_f3: "f1_f2_f3 IN ('F1', 'F2', 'F3', 'U900')"
+#         new_site: "new_site IN ('EXISTING', 'NEW SITE')"
+#         cgi: "cgi RLIKE '^510-10-([0-9]+)-([0-9]+)$'"
+#         longitude: "longitude BETWEEN 94 AND 142"
+#         latitude: "latitude BETWEEN -12 AND 7"
+#     accuracy:
+#       source_filter:
+#         date_column: date_id ## commented to check all rows
+#         date_format: "%Y-%m-%d"
+#         date_checked: "days:-1"
+#         additional_filter:
+#         groupby: lac,ci
+#       target_filter:
+#         date_column: date_id ## commented to check all rows
+#         date_format: "%Y-%m-%d"
+#         date_checked: "days:-1"
+#         groupby: lac,ci
+#       join_type: inner
+#       dq_rules:
+#         max_of_longitude:
+#           source_cols: longitude
+#           target_cols: longitude
+#           aggfunc: max
+#           threshold: 0.02
+#         max_of_latitude:
+#           source_cols: latitude
+#           target_cols: latitude
+#           aggfunc: max
+#           threshold: 0.02
+#         max_of_frequency_mhz:
+#           source_cols: frequency_mhz
+#           target_cols: frequency_mhz
+#           aggfunc: max
+
+# dq_chrono_landing_3g:
+#   target:
+#     <<: *src_mariadb
+#     database: ods_staging
+#     table: chrono_landing_3g
+#   measure:
+#     timeliness:
+#       date_column: date_id
+#       date_format: "%Y-%m-%d"
+#       expected_delivery: "days:-1"
+#     completeness:
+#       # date_column: date_id ## commented to check all rows
+#       # date_format: "%Y-%m-%d"
+#       date_checked: "days:-1"
+#       dq_rules:
+#         source: "source IS NOT NULL"
+#         regional: "regional LIKE 'REGIONAL%'"
+#         vendor: "vendor IN ('HUAWEI', 'NSN', 'ERICSSON', 'ZTE')"
+#         rnc_id_lac_ci: "rnc_id_lac_ci IS NOT NULL"
+#         rnc_name: "rnc_name IS NOT NULL"
+#         nodeb_name: "nodeb_name IS NOT NULL"
+#         cell_name: "cell_name IS NOT NULL"
+#         ne_id: "ne_id IS NOT NULL"
+#         # site_id: "site_id IS NOT NULL"
+#         site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-Z]{3})([0-9]{3})')"
+#         lac: "lac RLIKE '([0-9]{1,7})'"
+#         ci: "ci RLIKE '([0-9]{1,5})'"
+#         frequency_mhz: "frequency_mhz BETWEEN 800 AND 2200"
+#         bandtype: "bandtype IN ('UMTS-2100' , 'UMTS-900', 'UMTS-850', 'UMTS-800')"
+#         type_bts: "type_bts IS NOT NULL"
+#         f1_f2_f3: "f1_f2_f3 IN ('F1', 'F2', 'F3', 'U900')"
+#         new_site: "new_site IN ('EXISTING', 'NEW SITE')"
+#         cgi: "cgi RLIKE '^510-10-([0-9]+)-([0-9]+)$'"
+#         longitude: "longitude BETWEEN 94 AND 142"
+#         latitude: "latitude BETWEEN -12 AND 7"
+
+# dq_chrono_4g:
+#   source:
+#     <<: *src_mariadb
+#     database: ods_staging
+#     table: chrono_landing_4g
+#   target:
+#     <<: *src_mariadb
+#     database: ods
+#     table: chrono_4g
+#   measure:
+#     timeliness:
+#       date_column: date_id
+#       date_format: "%Y-%m-%d"
+#       expected_delivery: "days:-1"
+#       check_avaibility_until: "days:-8"
+#       interval_unit: days
+#     completeness:
+#       # date_column: date_id ## commented to check all rows
+#       # date_format: "%Y-%m-%d"
+#       date_checked: "days:-1"
+#       dq_rules:
+#         source: "source IS NOT NULL"
+#         regional: "regional LIKE 'REGIONAL%'"
+#         vendor: "vendor IN ('HUAWEI', 'NSN', 'ERICSSON', 'ZTE')"
+#         tac_enodebid_ci: "tac_enodebid_ci IS NOT NULL"
+#         enodebid: "enodebid IS NOT NULL"
+#         nodeb_name: "nodeb_name IS NOT NULL"
+#         cell_name: "cell_name IS NOT NULL"
+#         ne_id: "ne_id IS NOT NULL"
+#         # site_id: "site_id IS NOT NULL"
+#         site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-Z]{3})([0-9]{3})')"
+#         tac: "tac RLIKE '([0-9]{1,7})'"
+#         ci: "ci RLIKE '([0-9]{1,5})'"
+#         frequency_mhz: "frequency_mhz BETWEEN 800 AND 2400"
+#         band_type: "band_type IN ('FDD LTE1800' , 'FDD LTE900', 'FDD LTE2100', 'TDD LTE2300')"
+#         bts_type: "bts_type IS NOT NULL"
+#         new_site: "new_site IN ('EXISTING', 'NEW SITE')"
+#         ecgi: "ecgi RLIKE '^510-10-([0-9]+)$'"
+#         longitude: "longitude BETWEEN 94 AND 142"
+#         latitude: "latitude BETWEEN -12 AND 7"
+#     accuracy:
+#       source_filter:
+#         date_column: date_id ## commented to check all rows
+#         date_format: "%Y-%m-%d"
+#         date_checked: "days:-1"
+#         additional_filter:
+#         groupby: tac,ci
+#       target_filter:
+#         date_column: date_id ## commented to check all rows
+#         date_format: "%Y-%m-%d"
+#         date_checked: "days:-1"
+#         groupby: tac,ci
+#       join_type: inner
+#       dq_rules:
+#         max_of_longitude:
+#           source_cols: longitude
+#           target_cols: longitude
+#           aggfunc: max
+#           threshold: 0.02
+#         max_of_latitude:
+#           source_cols: latitude
+#           target_cols: latitude
+#           aggfunc: max
+#           threshold: 0.02
+#         max_of_frequency_mhz:
+#           source_cols: frequency_mhz
+#           target_cols: frequency_mhz
+#           aggfunc: max
+
+# dq_chrono_4g_uso:
+#   source:
+#     <<: *src_mariadb
+#     database: ods_staging
+#     table: chrono_landing_4g_uso
+#   target:
+#     <<: *src_mariadb
+#     database: ods
+#     table: chrono_4g_uso
+#   measure:
+#     timeliness:
+#       date_column: date_id
+#       date_format: "%Y-%m-%d"
+#       expected_delivery: "days:-1"
+#     completeness:
+#       # date_column: date_id ## commented to check all rows
+#       # date_format: "%Y-%m-%d"
+#       date_checked: "days:-1"
+#       dq_rules:
+#         source: "source IS NOT NULL"
+#         regional: "regional LIKE 'REGIONAL%'"
+#         vendor: "vendor IN ('HUAWEI', 'NSN', 'ERICSSON', 'ZTE')"
+#         tac_enodebid_ci: "tac_enodebid_ci IS NOT NULL"
+#         enodebid: "enodebid IS NOT NULL"
+#         nodeb_name: "nodeb_name IS NOT NULL"
+#         cell_name: "cell_name IS NOT NULL"
+#         ne_id: "ne_id IS NOT NULL"
+#         # site_id: "site_id IS NOT NULL"
+#         site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-Z]{3})([0-9]{3})')"
+#         tac: "tac RLIKE '([0-9]{1,7})'"
+#         ci: "ci RLIKE '([0-9]{1,5})'"
+#         frequency_mhz: "frequency_mhz BETWEEN 800 AND 2400"
+#         band_type: "band_type IN ('FDD LTE1800' , 'FDD LTE900', 'FDD LTE2100', 'TDD LTE2300')"
+#         bts_type: "bts_type IS NOT NULL"
+#         new_site: "new_site IN ('EXISTING', 'NEW SITE')"
+#         ecgi: "ecgi RLIKE '^510-10-([0-9]+)$'"
+#         longitude: "longitude BETWEEN 94 AND 142"
+#         latitude: "latitude BETWEEN -12 AND 7"
+
+# dq_chrono_landing_4g:
+#   target:
+#     <<: *src_mariadb
+#     database: ods_staging
+#     table: chrono_landing_4g
+#   measure:
+#     timeliness:
+#       date_column: date_id
+#       date_format: "%Y-%m-%d"
+#       expected_delivery: "days:-1"
+#     completeness:
+#       # date_column: date_id ## commented to check all rows
+#       # date_format: "%Y-%m-%d"
+#       date_checked: "days:-1"
+#       dq_rules:
+#         source: "source IS NOT NULL"
+#         regional: "regional LIKE 'REGIONAL%'"
+#         vendor: "vendor IN ('HUAWEI', 'NSN', 'ERICSSON', 'ZTE')"
+#         tac_enodebid_ci: "tac_enodebid_ci IS NOT NULL"
+#         enodebid: "enodebid IS NOT NULL"
+#         nodeb_name: "nodeb_name IS NOT NULL"
+#         cell_name: "cell_name IS NOT NULL"
+#         ne_id: "ne_id IS NOT NULL"
+#         # site_id: "site_id IS NOT NULL"
+#         site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-Z]{3})([0-9]{3})')"
+#         tac: "tac RLIKE '([0-9]{1,7})'"
+#         ci: "ci RLIKE '([0-9]{1,5})'"
+#         frequency_mhz: "frequency_mhz BETWEEN 800 AND 2400"
+#         band_type: "band_type IN ('FDD LTE1800' , 'FDD LTE900', 'FDD LTE2100', 'TDD LTE2300')"
+#         bts_type: "bts_type IS NOT NULL"
+#         new_site: "new_site IN ('EXISTING', 'NEW SITE')"
+#         ecgi: "ecgi RLIKE '^510-10-([0-9]+)$'"
+#         longitude: "longitude BETWEEN 94 AND 142"
+#         latitude: "latitude BETWEEN -12 AND 7"
+
+# dq_chrono_landing_4g_uso:
+#   target:
+#     <<: *src_mariadb
+#     database: ods_staging
+#     table: chrono_landing_4g_uso
+#   measure:
+#     timeliness:
+#       date_column: date_id
+#       date_format: "%Y-%m-%d"
+#       expected_delivery: "days:-1"
+#     completeness:
+#       # date_column: date_id ## commented to check all rows
+#       # date_format: "%Y-%m-%d"
+#       date_checked: "days:-1"
+#       dq_rules:
+#         source: "source IS NOT NULL"
+#         regional: "regional LIKE 'REGIONAL%'"
+#         vendor: "vendor IN ('HUAWEI', 'NSN', 'ERICSSON', 'ZTE')"
+#         tac_enodebid_ci: "tac_enodebid_ci IS NOT NULL"
+#         enodebid: "enodebid IS NOT NULL"
+#         nodeb_name: "nodeb_name IS NOT NULL"
+#         cell_name: "cell_name IS NOT NULL"
+#         ne_id: "ne_id IS NOT NULL"
+#         # site_id: "site_id IS NOT NULL"
+#         site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-Z]{3})([0-9]{3})')"
+#         tac: "tac RLIKE '([0-9]{1,7})'"
+#         ci: "ci RLIKE '([0-9]{1,5})'"
+#         frequency_mhz: "frequency_mhz BETWEEN 800 AND 2400"
+#         band_type: "band_type IN ('FDD LTE1800' , 'FDD LTE900', 'FDD LTE2100', 'TDD LTE2300')"
+#         bts_type: "bts_type IS NOT NULL"
+#         new_site: "new_site IN ('EXISTING', 'NEW SITE')"
+#         ecgi: "ecgi RLIKE '^510-10-([0-9]+)$'"
+#         longitude: "longitude BETWEEN 94 AND 142"
+#         latitude: "latitude BETWEEN -12 AND 7"
+
+# dq_chrono_5g:
+#   source:
+#     <<: *src_mariadb
+#     database: ods_staging
+#     table: chrono_landing_5g
+#   target:
+#     <<: *src_mariadb
+#     database: ods
+#     table: chrono_5g
+#   measure:
+#     timeliness:
+#       date_column: date_id
+#       date_format: "%Y-%m-%d"
+#       expected_delivery: "days:-1"
+#     completeness:
+#       # date_column: date_id ## commented to check all rows
+#       # date_format: "%Y-%m-%d"
+#       date_checked: "days:-1"
+#       dq_rules:
+#         source: "source IS NOT NULL"
+#         regional: "regional LIKE 'REGIONAL%'"
+#         vendor: "vendor IN ('HUAWEI', 'NSN', 'ERICSSON', 'ZTE')"
+#         tac_gnodebid_ci: "tac_gnodebid_ci IS NOT NULL"
+#         gnodeb_id: "gnodeb_id IS NOT NULL"
+#         nodeb_name: "nodeb_name IS NOT NULL"
+#         cell_name: "cell_name IS NOT NULL"
+#         ne_id: "ne_id IS NOT NULL"
+#         # site_id: "site_id IS NOT NULL"
+#         site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-Z]{3})([0-9]{3})')"
+#         tac: "tac RLIKE '([0-9]{1,7})'"
+#         ci: "ci RLIKE '([0-9]{1,5})'"
+#         frequency_mhz: "frequency_mhz BETWEEN 2100 AND 2400"
+#         band_type: "band_type IN ('TDD NR2300' , 'FDD NR2100')"
+#         bts_type: "bts_type IS NOT NULL"
+#         new_site: "new_site IN ('EXISTING', 'NEW SITE')"
+#         ncgi: "ncgi RLIKE '^510-10-([0-9]+)$'"
+#         longitude: "longitude BETWEEN 94 AND 142"
+#         latitude: "latitude BETWEEN -12 AND 7"
+#     accuracy:
+#       source_filter:
+#         date_column: date_id ## commented to check all rows
+#         date_format: "%Y-%m-%d"
+#         date_checked: "days:-1"
+#         additional_filter:
+#         groupby: tac,ci
+#       target_filter:
+#         date_column: date_id ## commented to check all rows
+#         date_format: "%Y-%m-%d"
+#         date_checked: "days:-1"
+#         groupby: tac,ci
+#       join_type: inner
+#       dq_rules:
+#         max_of_longitude:
+#           source_cols: longitude
+#           target_cols: longitude
+#           aggfunc: max
+#           threshold: 0.02
+#         max_of_latitude:
+#           source_cols: latitude
+#           target_cols: latitude
+#           aggfunc: max
+#           threshold: 0.02
+#         max_of_frequency_mhz:
+#           source_cols: frequency_mhz
+#           target_cols: frequency_mhz
+#           aggfunc: max
+
+# dq_chrono_landing_5g:
+#   target:
+#     <<: *src_mariadb
+#     database: ods_staging
+#     table: chrono_landing_5g
+#   measure:
+#     timeliness:
+#       date_column: date_id
+#       date_format: "%Y-%m-%d"
+#       expected_delivery: "days:-1"
+#     completeness:
+#       # date_column: date_id ## commented to check all rows
+#       # date_format: "%Y-%m-%d"
+#       date_checked: "days:-1"
+#       dq_rules:
+#         source: "source IS NOT NULL"
+#         regional: "regional LIKE 'REGIONAL%'"
+#         vendor: "vendor IN ('HUAWEI', 'NSN', 'ERICSSON', 'ZTE')"
+#         tac_gnodebid_ci: "tac_gnodebid_ci IS NOT NULL"
+#         gnodeb_id: "gnodeb_id IS NOT NULL"
+#         nodeb_name: "nodeb_name IS NOT NULL"
+#         cell_name: "cell_name IS NOT NULL"
+#         ne_id: "ne_id IS NOT NULL"
+#         # site_id: "site_id IS NOT NULL"
+#         site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-Z]{3})([0-9]{3})')"
+#         tac: "tac RLIKE '([0-9]{1,7})'"
+#         ci: "ci RLIKE '([0-9]{1,5})'"
+#         frequency_mhz: "frequency_mhz BETWEEN 2100 AND 2400"
+#         band_type: "band_type IN ('TDD NR2300' , 'FDD NR2100')"
+#         bts_type: "bts_type IS NOT NULL"
+#         new_site: "new_site IN ('EXISTING', 'NEW SITE')"
+#         ncgi: "ncgi RLIKE '^510-10-([0-9]+)$'"
+#         longitude: "longitude BETWEEN 94 AND 142"
+#         latitude: "latitude BETWEEN -12 AND 7"
+
+# dq_chrono_master_site:
+#   source:
+#     <<: *src_mariadb
+#     database: ods_staging
+#     table: chrono_landing_master_site
+#   target:
+#     <<: *src_mariadb
+#     database: ods
+#     table: chrono_master_site
+#   measure:
+#     timeliness:
+#       date_column: last_updated
+#       date_format: "%Y-%m-%d"
+#       expected_delivery: "days:-1"
+#     completeness:
+#       # date_column: date_id ## commented to check all rows
+#       # date_format: "%Y-%m-%d"
+#       date_checked: "days:-1"
+#       dq_rules:
+#         site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-Z]{3})([0-9]{3})')"
+#         site_name: "site_name IS NOT NULL"
+#         new_site: "new_site IN ('EXISTING', 'NEW SITE')"
+#         longitude: "longitude BETWEEN 94 AND 142"
+#         latitude: "latitude BETWEEN -12 AND 7"
+#         regional: "regional LIKE 'REGIONAL%'"
+
+# dq_chrono_landing_master_site:
+#   target:
+#     <<: *src_mariadb
+#     database: ods_staging
+#     table: chrono_landing_master_site
+#   measure:
+#     timeliness:
+#       date_column: last_updated
+#       date_format: "%Y-%m-%d"
+#       expected_delivery: "days:-1"
+#     completeness:
+#       # date_column: date_id ## commented to check all rows
+#       # date_format: "%Y-%m-%d"
+#       date_checked: "days:-1"
+#       dq_rules:
+#         site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-Z]{3})([0-9]{3})')"
+#         site_name: "site_name IS NOT NULL"
+#         new_site: "new_site IN ('EXISTING', 'NEW SITE')"
+#         longitude: "longitude BETWEEN 94 AND 142"
+#         latitude: "latitude BETWEEN -12 AND 7"
+#         regional: "regional LIKE 'REGIONAL%'"

@@ -1,0 +1,23 @@
+dq_amesty_master_site:
+  target:
+    # <<: *src_mariadb
+    database: ods
+    table: amesty_master_site
+  measure:
+    timeliness:
+      date_column: last_sync
+      date_format: "%Y-%m-%d"
+      expected_delivery: "days:-1"
+    completeness:
+      date_checked: "days:-1"
+      dq_rules:
+        site_id: "(site_id IS NOT NULL AND site_id RLIKE '([A-Z]{3})([0-9]{3})')"
+        site_name: "site_name IS NOT NULL"
+        longitude: "longitude BETWEEN 94 AND 142"
+        latitude: "latitude BETWEEN -12 AND 7"
+        regional: "regional LIKE 'REGIONAL%'"
+        nsa_name: "nsa_name IS NOT NULL"
+        rtpo_name: "rtpo_name IS NOT NULL"
+        address: "address IS NOT NULL"
+        sitetype_name: "sitetype_name IS NOT NULL"
+        sitetype_code: "sitetype_code IN ('PERMANENT', 'STO', 'TTC', 'WAREHOUSE', 'COMBAT', 'LANDRURAL')"

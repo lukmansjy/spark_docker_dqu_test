@@ -1,0 +1,66 @@
+# FROM python:3.9.16
+FROM python:3.13.2-slim-bullseye
+
+# RUN apt-get update
+
+# # java
+# RUN apt-get -y install default-jre
+# RUN apt-get -y install openjdk-11-jre
+# RUN apt-get -y install openjdk-11-jdk
+
+
+# Pastikan dependensi dasar tersedia
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    software-properties-common \
+    gnupg \
+    ca-certificates && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Tambahkan repository untuk OpenJDK 11 (bila perlu)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openjdk-11-jre \
+    openjdk-11-jdk && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install procps
+
+# spark
+WORKDIR /opt/spark
+# RUN wget https://dlcdn.apache.org/spark/spark-3.3.2/spark-3.3.2-bin-hadoop3.tgz
+# RUN wget https://dlcdn.apache.org/spark/spark-3.5.5/spark-3.5.5-bin-hadoop3.tgz
+COPY ./bin/spark-3.5.5-bin-hadoop3.tgz ./spark-3.5.5-bin-hadoop3.tgz
+RUN tar xvf spark-3.5.5-bin-hadoop3.tgz
+
+ENV SPARK_HOME /opt/spark/spark-3.5.5-bin-hadoop3
+RUN export SPARK_HOME
+ENV PATH="${PATH}:${SPARK_HOME}/bin"
+
+ENV PYSPARK_PYTHON /usr/local/bin/python3
+RUN rm -f spark-3.5.5-bin-hadoop3.tgz
+
+RUN pip3 install pyspark
+RUN pip3 install pyyaml
+
+# setup project
+WORKDIR /var/spark_docker
+COPY ./src ./src
+# RUN pip3 install -r requirements.txt
+
+# ENV PYTHONPATH=${PYTHONPATH}:/var/spark_docker
+# ENV PYSPARK_DRIVER_PYTHON=/usr/local/bin/python3
+
+
+# ENV DQ_AIRFLOW_CONFIG_PATH_DEV /var/agata_dqu/catalogs/dev/scheduler.yml
+# ENV PYSPARK_APP_HOME_DQ_DEV /var/agata_dqu
+# ENV PYSPARK_VENV_DRIVER_DEV /usr/local/bin/python3
+# ENV PYTHONPATH $PYTHONPATH:/var/agata_dqu
+# ENV SPARK_DEPLOY_MODE client
+# ENV SPARK_MASTER reference
+# ENV SPARK_HOME Path to Spark Home
+
+
+
+
+
+
+ENTRYPOINT ["tail", "-f", "/dev/null"]

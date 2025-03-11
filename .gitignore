@@ -1,0 +1,5 @@
+/bin/*
+!/bin/.gitkeep
+
+/src/jdbc/*
+!/src/jdbc/.gitkeep
